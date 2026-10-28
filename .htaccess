@@ -1,0 +1,39 @@
+# IPA Host — Apache configuration
+Options -Indexes
+DirectoryIndex index.php
+
+# Never serve internals, even if a sub-directory .htaccess is ignored.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(src|views|data)(/|$) - [F,L]
+  RewriteRule ^(config|config\.sample)\.php$ - [F,L]
+  RewriteRule (^|/)\. - [F,L]
+</IfModule>
+<FilesMatch "^(\.user\.ini|config\.php|config\.sample\.php|README\.md|LICENSE)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# PHP-FPM/CGI drop the Authorization header unless it's passed through (API uploads need it).
+<IfModule mod_setenvif.c>
+  SetEnvIf Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
+# Larger single-request uploads for the API (browser uploads are chunked and don't need this).
+# mod_php reads these; PHP-FPM hosts use .user.ini instead.
+<IfModule mod_php.c>
+  php_value upload_max_filesize 2G
+  php_value post_max_size 2G
+  php_value max_execution_time 600
+  php_value max_input_time 600
+</IfModule>
+<IfModule mod_php7.c>
+  php_value upload_max_filesize 2G
+  php_value post_max_size 2G
+  php_value max_execution_time 600
+  php_value max_input_time 600
+</IfModule>
